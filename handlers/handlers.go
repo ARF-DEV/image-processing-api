@@ -16,11 +16,11 @@ func CreateHandlers(user userhand.UserHandler, image imagehand.ImageHandler) htt
 
 	r.Route("/images", func(r chi.Router) {
 		// r.Use(middleware.Authenticate)
-		r.Get("/", nil)
+		r.Get("/", image.GetImages)
 		r.Post("/", image.UploadImage)
 
-		r.Get("/{id}", nil)
-		r.Post("/{id}/transform", nil)
+		r.Get("/{id}", image.GetImage)
+		r.Post("/{id}/transform", image.TransformImage)
 	})
 
 	return r

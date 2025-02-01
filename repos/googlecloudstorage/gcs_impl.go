@@ -1,9 +1,12 @@
 package googlecloudstorage
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/jpeg"
 	"io"
 	"log"
 
@@ -105,4 +108,27 @@ func (r *GoogleCloudStorageRepoImpl) UploadImage(ctx context.Context, req model.
 
 func (r *GoogleCloudStorageRepoImpl) Close() {
 	r.client.Close()
+}
+
+func (r *GoogleCloudStorageRepoImpl) LoadImage(ctx context.Context, img model.Image) (model.ImageInfo, error) {
+	rc, err := r.client.Bucket(img.GetBucket()).Object(img.GetObject()).NewReader(ctx)
+	if err != nil {
+		return model.ImageInfo{}, err
+	}
+	defer rc.Close()
+
+	var imageBuf bytes.Buffer
+	if _, err := io.Copy(&imageBuf, rc); err != nil {
+		return model.ImageInfo{}, err
+	}
+
+	loadedImage, format, err := image.Decode(&imageBuf)
+	if err != nil {
+		return model.ImageInfo{}, err
+	}
+
+	return model.ImageInfo{
+		Image:  loadedImage,
+		Format: format,
+	}, nil
 }

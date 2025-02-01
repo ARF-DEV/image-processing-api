@@ -21,7 +21,7 @@ func LoadConfig() error {
 	viper.BindEnv("DB_MASTER")
 	viper.BindEnv("GCS_BUCKET_NAME")
 	viper.BindEnv("GOOGLE_PROJECT_ID")
-	viper.BindEnv("GOOGLE_STORAGE_API")
+	viper.BindEnv("GOOGLE_STORAGE_URL")
 	if err := viper.ReadInConfig(); err != nil {
 		return err
 	}
