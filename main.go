@@ -14,6 +14,7 @@ import (
 	"github.com/ARF-DEV/image-processing-api/handlers"
 	"github.com/ARF-DEV/image-processing-api/handlers/imagehand"
 	"github.com/ARF-DEV/image-processing-api/handlers/userhand"
+	producerconsumer "github.com/ARF-DEV/image-processing-api/producer_consumer"
 	"github.com/ARF-DEV/image-processing-api/repos/googlecloudstorage"
 	"github.com/ARF-DEV/image-processing-api/repos/imagerepo"
 	"github.com/ARF-DEV/image-processing-api/repos/userrepo"
@@ -28,6 +29,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	userRepo := userrepo.New(db)
 
 	gcsRepo := googlecloudstorage.New(context.Background(), cfg)
@@ -35,8 +37,21 @@ func main() {
 
 	imageRepo := imagerepo.New(db)
 
+	consumer, err := producerconsumer.NewConsumer(cfg.RABBITMQ_URI, imageRepo, gcsRepo)
+	if err != nil {
+		panic(err)
+	}
+	defer consumer.Close()
+	go consumer.RunConsumer(context.Background(), cfg.QUEUE_NAME)
+
+	producer, err := producerconsumer.NewProducer(cfg.RABBITMQ_URI)
+	if err != nil {
+		panic(err)
+	}
+	defer producer.Close()
+
 	userServ := userserv.New(userRepo)
-	imageServ := imageserv.New(gcsRepo, imageRepo)
+	imageServ := imageserv.New(gcsRepo, imageRepo, producer)
 
 	imageHand := imagehand.New(imageServ)
 	userHand := userhand.New(userServ)

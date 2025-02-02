@@ -1,4 +1,4 @@
-package imageserv
+package producerconsumer
 
 import (
 	"bytes"
@@ -11,16 +11,15 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"math"
-	"mime/multipart"
+	"log"
 	"strings"
 
 	"github.com/ARF-DEV/image-processing-api/configs"
 	"github.com/ARF-DEV/image-processing-api/model"
-	producerconsumer "github.com/ARF-DEV/image-processing-api/producer_consumer"
 	"github.com/ARF-DEV/image-processing-api/repos/googlecloudstorage"
 	"github.com/ARF-DEV/image-processing-api/repos/imagerepo"
 	"github.com/disintegration/imaging"
+	"github.com/rabbitmq/amqp091-go"
 )
 
 const (
@@ -30,75 +29,78 @@ const (
 
 type imageConvertFunc func(w io.Writer, image image.Image) error
 
-type ImageServImpl struct {
-	resource  googlecloudstorage.GoogleCloudStorageRepo
+type Consumer struct {
+	ch        *amqp091.Channel
+	conn      *amqp091.Connection
 	imageRepo imagerepo.ImageRepo
-	producer  *producerconsumer.Producer
+	resource  googlecloudstorage.GoogleCloudStorageRepo
 }
 
-func New(resource googlecloudstorage.GoogleCloudStorageRepo, imageRepo imagerepo.ImageRepo, producer *producerconsumer.Producer) ImageServ {
-	return &ImageServImpl{
-		resource:  resource,
+func NewConsumer(url string, imageRepo imagerepo.ImageRepo, resource googlecloudstorage.GoogleCloudStorageRepo) (*Consumer, error) {
+	var err error
+	consume := Consumer{
 		imageRepo: imageRepo,
-		producer:  producer,
+		resource:  resource,
+	}
+	consume.conn, err = amqp091.Dial(url)
+	if err != nil {
+		return nil, err
+	}
+
+	consume.ch, err = consume.conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+	return &consume, nil
+}
+
+func (c *Consumer) RunConsumer(ctx context.Context, queueName string) {
+	_, err := c.ch.QueueDeclare(queueName, false, false, false, false, nil)
+	if err != nil {
+		log.Println("error when declaring queue: ", err)
+		return
+	}
+	deliveryChan, err := c.ch.Consume(queueName, configs.GetConfig().QUEUE_NAME, false, false, false, false, nil)
+	if err != nil {
+		log.Println("error when consuming queue: ", err)
+		return
+	}
+
+processMesssageLoop:
+	for d := range deliveryChan {
+		select {
+		case <-ctx.Done():
+			break processMesssageLoop
+		default:
+			req := model.ImageTransformBrokerRequest{}
+			if err := json.Unmarshal(d.Body, &req); err != nil {
+				log.Println(err)
+				d.Nack(false, false)
+				continue
+			}
+			if err := c.TransformImage(ctx, req.ImageID, req.Req); err != nil {
+				log.Println(err)
+				d.Nack(false, false)
+				continue
+			}
+			d.Ack(false)
+		}
 	}
 }
 
-func (s *ImageServImpl) UploadImage(ctx context.Context, file multipart.File, header *multipart.FileHeader) error {
-	url, err := s.resource.UploadImage(ctx, model.UploadImageRequest{
-		Name:   header.Filename,
-		Reader: file,
-	})
-	if err != nil {
-		return err
-	}
-
-	if _, err := s.imageRepo.SaveImage(ctx, model.Image{
-		URL: url,
-	}); err != nil {
-		return err
-	}
-
-	return nil
+func (c *Consumer) Close() {
+	c.ch.Close()
+	c.conn.Close()
 }
-
-func (s *ImageServImpl) GetAllImage(ctx context.Context, page int64, limit int64) (model.ImageResponses, *model.Meta, error) {
-	images, err := s.imageRepo.GetImages(ctx, page, limit)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	total, err := s.imageRepo.CountImages(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	meta := model.Meta{
-		Page:      page,
-		Limit:     limit,
-		TotalData: total,
-		TotalPage: int64(math.Ceil(float64(total) / float64(limit))),
-	}
-	return model.Images(images).ToImageResponses(configs.GetConfig()), &meta, nil
-}
-
-func (s *ImageServImpl) GetImage(ctx context.Context, id int64) (model.ImageResponse, error) {
-	image, err := s.imageRepo.GetImage(ctx, id)
-	if err != nil {
-		return model.ImageResponse{}, err
-	}
-	return image.ToImageResponse(configs.GetConfig()), nil
-}
-
-func (s *ImageServImpl) TransformImage(ctx context.Context, id int64, req model.ImageTransformRequestOpts) (model.ImageResponse, error) {
+func (s *Consumer) TransformImage(ctx context.Context, id int64, req model.ImageTransformRequestOpts) error {
 	requestedImage, err := s.imageRepo.GetImage(ctx, id)
 	if err != nil {
-		return model.ImageResponse{}, err
+		return err
 	}
 
 	imageData, err := s.resource.LoadImage(ctx, requestedImage)
 	if err != nil {
-		return model.ImageResponse{}, err
+		return err
 	}
 	transformed := false
 	if req.CropTransform != (model.CropTransformRequest{}) {
@@ -110,7 +112,7 @@ func (s *ImageServImpl) TransformImage(ctx context.Context, id int64, req model.
 		transformed = true
 		imageData.Image, err = ChangeImageFormat(imageData.Image, req.Format)
 		if err != nil {
-			return model.ImageResponse{}, err
+			return err
 		}
 	}
 	if req.Filters != (model.FilterTransformRequest{}) {
@@ -133,16 +135,16 @@ func (s *ImageServImpl) TransformImage(ctx context.Context, id int64, req model.
 	}
 
 	if !transformed {
-		return requestedImage.ToImageResponse(configs.GetConfig()), nil
+		return nil
 	}
 	decoder, ok := getDecodeFunctions()[imageData.Format]
 	if !ok {
-		return model.ImageResponse{}, fmt.Errorf("decoder isn't implemented")
+		return fmt.Errorf("decoder isn't implemented")
 	}
 
 	buf := bytes.Buffer{}
 	if err := decoder(&buf, imageData.Image); err != nil {
-		return model.ImageResponse{}, err
+		return err
 	}
 
 	uploadReq := model.UploadImageRequest{
@@ -154,7 +156,7 @@ func (s *ImageServImpl) TransformImage(ctx context.Context, id int64, req model.
 	uploadReq.Name = fmt.Sprintf("%s:%s.%s", fileName, req.GenerateStr(), fileExtentions)
 	url, err := s.resource.UploadImage(ctx, uploadReq)
 	if err != nil {
-		return model.ImageResponse{}, err
+		return err
 	}
 
 	newImage := model.Image{
@@ -162,14 +164,13 @@ func (s *ImageServImpl) TransformImage(ctx context.Context, id int64, req model.
 	}
 	savedId, err := s.imageRepo.SaveImage(ctx, newImage)
 	if err != nil {
-		return model.ImageResponse{}, err
+		return err
 	}
 
 	newImage.ID = savedId
 	// newImage := model.Image{}
-	return newImage.ToImageResponse(configs.GetConfig()), nil
+	return nil
 }
-
 func CropImage(imageData image.Image, cropReq model.CropTransformRequest) image.Image {
 	newImage := image.NewRGBA(imageData.Bounds())
 	draw.Draw(newImage, newImage.Bounds(), imageData, newImage.Rect.Min, draw.Src)
@@ -267,19 +268,4 @@ func getDecodeFunctions() map[string]imageConvertFunc {
 		},
 		IMG_PNG: png.Encode,
 	}
-}
-
-func (s *ImageServImpl) TransformImageBroker(ctx context.Context, id int64, req model.ImageTransformRequestOpts) (model.ImageResponse, error) {
-	data, err := json.Marshal(model.ImageTransformBrokerRequest{
-		ImageID: id,
-		Req:     req,
-	})
-	if err != nil {
-		return model.ImageResponse{}, err
-	}
-	err = s.producer.PublishCtx(ctx, configs.GetConfig().QUEUE_NAME, data)
-	if err != nil {
-		return model.ImageResponse{}, err
-	}
-	return model.ImageResponse{}, nil
 }

@@ -113,3 +113,8 @@ type ImageInfo struct {
 	Image  image.Image
 	Format string
 }
+
+type ImageTransformBrokerRequest struct {
+	Req     ImageTransformRequestOpts `json:"opts"`
+	ImageID int64                     `json:"image_id"`
+}

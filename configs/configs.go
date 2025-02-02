@@ -10,6 +10,8 @@ type Config struct {
 	GCS_BUCKET_NAME    string `mapstructure:"GCS_BUCKET_NAME"`
 	GOOGLE_PROJECT_ID  string `mapstructure:"GOOGLE_PROJECT_ID"`
 	GOOGLE_STORAGE_URL string `mapstructure:"GOOGLE_STORAGE_URL"`
+	RABBITMQ_URI       string `mapstructure:"RABBITMQ_URI"`
+	QUEUE_NAME         string `mapstructure:"QUEUE_NAME"`
 }
 
 var config Config
@@ -22,6 +24,8 @@ func LoadConfig() error {
 	viper.BindEnv("GCS_BUCKET_NAME")
 	viper.BindEnv("GOOGLE_PROJECT_ID")
 	viper.BindEnv("GOOGLE_STORAGE_URL")
+	viper.BindEnv("RABBITMQ_URI")
+	viper.BindEnv("QUEUE_NAME")
 	if err := viper.ReadInConfig(); err != nil {
 		return err
 	}

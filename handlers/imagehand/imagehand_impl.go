@@ -6,7 +6,6 @@ import (
 
 	"github.com/ARF-DEV/image-processing-api/model"
 	"github.com/ARF-DEV/image-processing-api/services/imageserv"
-	"github.com/ARF-DEV/image-processing-api/utils"
 	"github.com/ARF-DEV/image-processing-api/utils/httputils"
 )
 
@@ -83,9 +82,8 @@ func (h *ImageHandlerImpl) TransformImage(w http.ResponseWriter, r *http.Request
 		httputils.SendResponse(w, err.Error(), nil, nil, err)
 		return
 	}
-	utils.PrintInJSONFormat(transformReq)
 
-	res, err := h.imageServ.TransformImage(r.Context(), id, transformReq.Transform)
+	res, err := h.imageServ.TransformImageBroker(r.Context(), id, transformReq.Transform)
 	if err != nil {
 		httputils.SendResponse(w, err.Error(), nil, nil, err)
 		return
