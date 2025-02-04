@@ -13,7 +13,8 @@ import (
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorization := r.Header.Get("Authorization")
-		if strings.Contains(authorization, "Bearer ") {
+		if !strings.Contains(authorization, "Bearer ") {
+			fmt.Println(authorization)
 			httputils.SendResponse(w, httputils.ErrUnauthorized.Error(), nil, nil, httputils.ErrUnauthorized)
 			return
 		}
