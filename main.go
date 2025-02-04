@@ -59,7 +59,7 @@ func main() {
 	h := handlers.CreateHandlers(userHand, imageHand)
 
 	server := http.Server{
-		Addr:    ":8080",
+		Addr:    fmt.Sprintf(":%s", cfg.PORT),
 		Handler: h,
 	}
 	go func() {

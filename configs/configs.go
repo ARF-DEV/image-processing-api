@@ -12,6 +12,7 @@ type Config struct {
 	GOOGLE_STORAGE_URL string `mapstructure:"GOOGLE_STORAGE_URL"`
 	RABBITMQ_URI       string `mapstructure:"RABBITMQ_URI"`
 	QUEUE_NAME         string `mapstructure:"QUEUE_NAME"`
+	PORT               string `mapstructure:"PORT"`
 }
 
 var config Config
@@ -26,6 +27,7 @@ func LoadConfig() error {
 	viper.BindEnv("GOOGLE_STORAGE_URL")
 	viper.BindEnv("RABBITMQ_URI")
 	viper.BindEnv("QUEUE_NAME")
+	viper.BindEnv("PORT")
 	if err := viper.ReadInConfig(); err != nil {
 		return err
 	}
