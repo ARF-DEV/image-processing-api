@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"os"
 
 	_ "github.com/ARF-DEV/image-processing-api/migrations/scripts"
@@ -13,7 +12,6 @@ import (
 
 func main() {
 	args := os.Args // 2 migrations path, 3 db type, 4 db connection string, 5 command
-	fmt.Println(args)
 	if len(args) < 5 {
 		panic("not enough arguments, go run main.go <dir> <db type> <db connection string> <command>")
 	}

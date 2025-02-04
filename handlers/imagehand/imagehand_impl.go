@@ -1,7 +1,6 @@
 package imagehand
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/ARF-DEV/image-processing-api/model"
@@ -50,7 +49,6 @@ func (h *ImageHandlerImpl) GetImages(w http.ResponseWriter, r *http.Request) {
 		httputils.SendResponse(w, err.Error(), nil, nil, err)
 		return
 	}
-	fmt.Println(images)
 
 	httputils.SendResponse(w, httputils.Success, images, meta, nil)
 }

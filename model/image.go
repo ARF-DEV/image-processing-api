@@ -5,6 +5,7 @@ import (
 	"image"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/ARF-DEV/image-processing-api/configs"
 )
@@ -80,6 +81,8 @@ func (i *ImageTransformRequestOpts) GenerateStr() string {
 	if i.Filters != (FilterTransformRequest{}) {
 		s = append(s, "filtered")
 	}
+
+	s = append(s, fmt.Sprintf("%d", time.Now().Unix()))
 
 	return strings.Join(s, "-")
 }
