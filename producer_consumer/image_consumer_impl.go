@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/ARF-DEV/image-processing-api/configs"
 	"github.com/ARF-DEV/image-processing-api/model"
@@ -23,8 +24,9 @@ import (
 )
 
 const (
-	IMG_JPEG string = "jpeg"
-	IMG_PNG  string = "png"
+	IMG_JPEG  string        = "jpeg"
+	IMG_PNG   string        = "png"
+	rateLimit time.Duration = time.Second / 20
 )
 
 type imageConvertFunc func(w io.Writer, image image.Image) error
@@ -66,12 +68,15 @@ func (c *Consumer) RunConsumer(ctx context.Context, queueName string) {
 		return
 	}
 
+	ticker := time.NewTicker(rateLimit)
+	defer ticker.Stop()
+
 processMesssageLoop:
 	for d := range deliveryChan {
 		select {
 		case <-ctx.Done():
 			break processMesssageLoop
-		default:
+		case <-ticker.C:
 			req := model.ImageTransformBrokerRequest{}
 			if err := json.Unmarshal(d.Body, &req); err != nil {
 				log.Println(err)
