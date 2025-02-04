@@ -269,17 +269,17 @@ func getDecodeFunctions() map[string]imageConvertFunc {
 	}
 }
 
-func (s *ImageServImpl) TransformImageBroker(ctx context.Context, id int64, req model.ImageTransformRequestOpts) (model.ImageResponse, error) {
+func (s *ImageServImpl) TransformImageBroker(ctx context.Context, id int64, req model.ImageTransformRequestOpts) error {
 	data, err := json.Marshal(model.ImageTransformBrokerRequest{
 		ImageID: id,
 		Req:     req,
 	})
 	if err != nil {
-		return model.ImageResponse{}, err
+		return err
 	}
 	err = s.producer.PublishCtx(ctx, configs.GetConfig().QUEUE_NAME, data)
 	if err != nil {
-		return model.ImageResponse{}, err
+		return err
 	}
-	return model.ImageResponse{}, nil
+	return nil
 }

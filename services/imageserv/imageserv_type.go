@@ -12,5 +12,5 @@ type ImageServ interface {
 	GetAllImage(ctx context.Context, page int64, limit int64) (model.ImageResponses, *model.Meta, error)
 	GetImage(ctx context.Context, id int64) (model.ImageResponse, error)
 	TransformImage(ctx context.Context, id int64, req model.ImageTransformRequestOpts) (model.ImageResponse, error)
-	TransformImageBroker(ctx context.Context, id int64, req model.ImageTransformRequestOpts) (model.ImageResponse, error)
+	TransformImageBroker(ctx context.Context, id int64, req model.ImageTransformRequestOpts) error
 }

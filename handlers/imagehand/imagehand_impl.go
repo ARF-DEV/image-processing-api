@@ -81,10 +81,10 @@ func (h *ImageHandlerImpl) TransformImage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	res, err := h.imageServ.TransformImageBroker(r.Context(), id, transformReq.Transform)
+	err = h.imageServ.TransformImageBroker(r.Context(), id, transformReq.Transform)
 	if err != nil {
 		httputils.SendResponse(w, err.Error(), nil, nil, err)
 		return
 	}
-	httputils.SendResponse(w, httputils.Success, res, nil, nil)
+	httputils.SendResponse(w, httputils.Success, nil, nil, nil)
 }
