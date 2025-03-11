@@ -66,9 +66,9 @@ func main() {
 		Handler: h,
 	}
 	go func() {
-		log.Println("server is now listening at port :8080")
+		log.Printf("server is now listening at port :%s\n", cfg.PORT)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			fmt.Printf("HTTP server ListenAndServe: %v", err)
+			fmt.Printf("HTTP server ListenAndServe: %v\n", err)
 		}
 	}()
 
