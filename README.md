@@ -26,7 +26,7 @@ image processing API, solution for roadmap.sh [project](https://roadmap.sh/proje
 - Apply filters (grayscale and sepia)
 
 
-Note: All expect Rotate transformation, are implemented without any 3rd party libraries (expect for golang's standard library)
+Note: All expect Rotate transformation, are implemented without any 3rd party libraries (only using golang's standard library)
 
 ## API Specification
 1. Register a new user:
