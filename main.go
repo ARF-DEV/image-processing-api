@@ -23,20 +23,22 @@ import (
 )
 
 func main() {
-	configs.LoadConfig()
+	if err := configs.LoadConfig(); err != nil {
+		panic(err)
+	}
 	cfg := configs.GetConfig()
 	db, err := configs.SetupDB(cfg.DB_MASTER)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("DB connected!!")
 
 	userRepo := userrepo.New(db)
-
 	gcsRepo := googlecloudstorage.New(context.Background(), cfg)
 	defer gcsRepo.Close()
+	fmt.Println("GCS connected")
 
 	imageRepo := imagerepo.New(db)
-
 	consumer, err := producerconsumer.NewConsumer(cfg.RABBITMQ_URI, imageRepo, gcsRepo)
 	if err != nil {
 		panic(err)
@@ -50,6 +52,7 @@ func main() {
 	}
 	defer producer.Close()
 
+	fmt.Println("RabbitMQ connected")
 	userServ := userserv.New(userRepo)
 	imageServ := imageserv.New(gcsRepo, imageRepo, producer)
 

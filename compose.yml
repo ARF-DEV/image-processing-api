@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  database:
+    container_name: database
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_USER=postgres"
+      - "POSTGRES_PASSWORD=@RIEF1234"
+      - "POSTGRES_DB=image_processing_api"
+    networks:
+      - backend
+    healthcheck:  
+      test: ["CMD-SHELL", "pg_isready -U postgres -d image_processing_api"]
+      interval: 5s
+      retries: 5
+      timeout: 3s
+
+  image-processing-api:
+    build: .
+    container_name: image-processing-api
+    ports: 
+      - "8080:8080"
+    environment:
+      DB_MASTER: "postgres://postgres:@RIEF1234@database:5432/image_processing_api?sslmode=disable"
+      SECRET_KEY: ${SECRET_KEY}
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME}
+      GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
+      GOOGLE_STORAGE_URL: ${GOOGLE_STORAGE_URL}
+      RABBITMQ_URI: amqp://guest:guest@rabbitmq:5672/
+      QUEUE_NAME: ${QUEUE_NAME}
+      PORT: ${PORT}
+      GOOGLE_APPLICATION_CREDENTIALS: /temp/keys/app_keys.json
+    depends_on:
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend
+    volumes:
+      - ${ADC}:/temp/keys/app_keys.json
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:4.0-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - backend
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+networks:
+  backend:
+    driver: bridge

@@ -18,8 +18,7 @@ type Config struct {
 var config Config
 
 func LoadConfig() error {
-	viper.SetConfigType("env")
-	viper.SetConfigFile(".env")
+	viper.AutomaticEnv()
 	viper.BindEnv("SECRET_KEY")
 	viper.BindEnv("DB_MASTER")
 	viper.BindEnv("GCS_BUCKET_NAME")
@@ -28,9 +27,6 @@ func LoadConfig() error {
 	viper.BindEnv("RABBITMQ_URI")
 	viper.BindEnv("QUEUE_NAME")
 	viper.BindEnv("PORT")
-	if err := viper.ReadInConfig(); err != nil {
-		return err
-	}
 
 	if err := viper.Unmarshal(&config); err != nil {
 		return err
