@@ -19,17 +19,18 @@ services:
       timeout: 3s
 
   image-processing-api:
-    build: .
+    build: 
+      context: .
     container_name: image-processing-api
     ports: 
       - "8080:8080"
     environment:
-      DB_MASTER: "postgres://postgres:@RIEF1234@database:5432/image_processing_api?sslmode=disable"
+      DB_MASTER: ${DB_MASTER} 
       SECRET_KEY: ${SECRET_KEY}
       GCS_BUCKET_NAME: ${GCS_BUCKET_NAME}
       GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
       GOOGLE_STORAGE_URL: ${GOOGLE_STORAGE_URL}
-      RABBITMQ_URI: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_URI: ${RABBITMQ_URI}
       QUEUE_NAME: ${QUEUE_NAME}
       PORT: ${PORT}
       GOOGLE_APPLICATION_CREDENTIALS: /temp/keys/app_keys.json
@@ -42,6 +43,18 @@ services:
       - backend
     volumes:
       - ${ADC}:/temp/keys/app_keys.json
+
+  migration:
+    build:
+      context: .
+      dockerfile: dockerfile.migrator
+      args:
+        DB_MASTER: "${DB_MASTER}"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - backend
 
   rabbitmq:
     container_name: rabbitmq

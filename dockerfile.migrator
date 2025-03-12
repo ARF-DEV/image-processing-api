@@ -1,0 +1,15 @@
+
+FROM golang:1.23 AS build
+
+
+COPY . . 
+RUN go build -o /migrator migrations/main.go
+
+FROM debian:bookworm-slim 
+COPY --from=build /migrator /migrator
+COPY ./migrations /migrations 
+
+ARG DB_MASTER
+ENV DB_MASTER ${DB_MASTER}
+
+CMD /migrator /migrations/scripts postgres ${DB_MASTER} up

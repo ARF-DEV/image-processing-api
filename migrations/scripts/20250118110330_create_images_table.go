@@ -3,6 +3,7 @@ package migrations
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/pressly/goose/v3"
 )
@@ -21,6 +22,8 @@ func upCreateImagesTable(ctx context.Context, tx *sql.Tx) error {
 	if _, err := tx.ExecContext(ctx, sq); err != nil {
 		return err
 	}
+
+	fmt.Println("images up")
 	return nil
 }
 

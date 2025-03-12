@@ -1,5 +1,7 @@
 FROM golang:1.23 AS build
 
+ARG DB_MASTER
+
 COPY . . 
 RUN ls -la
 RUN go build -o /main 

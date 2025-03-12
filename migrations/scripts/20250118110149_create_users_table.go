@@ -3,6 +3,7 @@ package migrations
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/pressly/goose/v3"
 )
@@ -21,6 +22,7 @@ func upCreateUsersTable(ctx context.Context, tx *sql.Tx) error {
 	if _, err := tx.ExecContext(ctx, query); err != nil {
 		return err
 	}
+	fmt.Println("users up")
 	return nil
 }
 
