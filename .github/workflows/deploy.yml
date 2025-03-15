@@ -1,0 +1,55 @@
+name: deploy-gce
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  GCP_ZONE: ${{ secrets.GCP_ZONE }}
+  GCP_VERBOSITY: $({{ secrets.GCP_VERBOSITY }} 
+  GCE_INSTANCE: ${{ secrets.GCE_INSTANCE }} 
+
+jobs:
+  deploy :
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    
+    - name: setup gcloud
+      uses: google-github-actions/setup-gcloud@master
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
+    - name: Get Cloud version & info
+      run: |-
+        echo '--- gcloud version ---'
+        gcloud version
+        echo '--- gcloud info ---'
+        gcloud info --anonymize
+    - name: Copy files to VM
+      run: |
+        gcloud compute scp -r . ubuntu@my-vm:~/app --zone=us-central1-a
+
+    - name: Restart the application on the VM
+      run: |
+        gcloud compute ssh ubuntu@my-vm --zone=us-central1-a --command="
+          cd ~/app &&
+          export DB_MASTER=${{ secrets.DB_MASTER }} &&
+          export SECRET_KEY=${{ secrets.SECRET_KEY }} &&
+          export GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }} &&
+          export GOOGLE_PROJECT_ID=${{ secrets.GOOGLE_PROJECT_ID }} &&
+          export GOOGLE_STORAGE_URL=${{ secrets.GOOGLE_STORAGE_URL }} &&
+          export RABBITMQ_URI=${{ secrets.RABBITMQ_URI }} &&
+          export QUEUE_NAME=${{ secrets.QUEUE_NAME }} &&
+          export PORT =${{ secrets.PORT }}
+          export GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }} &&
+          export ADC=${{ secrets.ADC }}
+          export POSTGRES_USER=${{ secrets.POSTGRES_USER }} &&
+          export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} &&
+          export POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+
+        docker compose up -d --build --remove-orphans"
