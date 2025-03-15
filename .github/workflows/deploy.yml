@@ -19,7 +19,7 @@ jobs:
         credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
  
     - name: setup gcloud
-      uses: google-github-actions/setup-gcloud@v0
+      uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
 
@@ -35,7 +35,7 @@ jobs:
 
     - name: Restart the application on the VM
       run: |
-        gcloud compute ssh ubuntu@my-vm --zone=us-central1-a --command="
+        gcloud compute ssh ubuntu@${{ secrets.EXTERNAL_IP }} --command="
           cd ~/app &&
           export DB_MASTER=${{ secrets.DB_MASTER }} &&
           export SECRET_KEY=${{ secrets.SECRET_KEY }} &&
