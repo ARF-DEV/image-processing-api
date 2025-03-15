@@ -3,12 +3,7 @@ name: deploy-gce
 on:
   push:
     branches:
-      - master
-
-env:
-  GCP_ZONE: ${{ secrets.GCP_ZONE }}
-  GCP_VERBOSITY: $({{ secrets.GCP_VERBOSITY }} 
-  GCE_INSTANCE: ${{ secrets.GCE_INSTANCE }} 
+      - main
 
 jobs:
   deploy :
