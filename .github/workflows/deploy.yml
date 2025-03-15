@@ -31,7 +31,7 @@ jobs:
         gcloud info --anonymize
     - name: Copy files to VM
       run: |
-        gcloud compute scp --recurse . ubuntu@my-vm:~/app --zone=us-central1-a
+        gcloud compute scp --recurse . ubuntu@${{ secrets.EXTERNAL_IP }}:~/app
 
     - name: Restart the application on the VM
       run: |
