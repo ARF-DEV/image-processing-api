@@ -35,7 +35,7 @@ jobs:
 
     - name: Restart the application on the VM
       run: |
-        gcloud compute ssh ubuntu@${{ secrets.EXTERNAL_IP }} --command="
+        gcloud compute ssh ubuntu@${{ secrets.EXTERNAL_IP }} --zone=asia-southeast2-a --command="
           cd ~/app &&
           export DB_MASTER=${{ secrets.DB_MASTER }} &&
           export SECRET_KEY=${{ secrets.SECRET_KEY }} &&
