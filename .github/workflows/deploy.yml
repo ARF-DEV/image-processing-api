@@ -45,6 +45,5 @@ jobs:
           export ADC=${{ secrets.ADC }}
           export POSTGRES_USER=${{ secrets.POSTGRES_USER }} &&
           export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} &&
-          export POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-
+          export POSTGRES_DB=${{ secrets.POSTGRES_DB }} &&
         docker compose up -d --build --remove-orphans"
