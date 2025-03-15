@@ -12,12 +12,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    
+
+    - name: Authenticate with Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+ 
     - name: setup gcloud
       uses: google-github-actions/setup-gcloud@v0
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
     - name: Get Cloud version & info
       run: |-
@@ -27,7 +31,7 @@ jobs:
         gcloud info --anonymize
     - name: Copy files to VM
       run: |
-        gcloud compute scp -r . ubuntu@my-vm:~/app --zone=us-central1-a
+        gcloud compute scp --recurse . ubuntu@my-vm:~/app --zone=us-central1-a
 
     - name: Restart the application on the VM
       run: |
