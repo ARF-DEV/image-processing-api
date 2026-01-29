@@ -27,7 +27,7 @@ image processing API, solution for roadmap.sh [project](https://roadmap.sh/proje
 
 
 
-Note: All expect Rotate transformation, are implemented without any 3rd party libraries (only using golang's standard library)
+Note: All except Rotate transformation, are implemented without any 3rd party libraries (only using golang's standard library)
 
 
 ## API Specification
